@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PYVOBJECT//NONSGML Version 1//EN
+BEGIN:VEVENT
+UID:20251118T075911Z - 87781@c10495c65ea7
+DTSTART:20251122T000000
+DTEND:20251122T000000
+ATTENDEE:MAILTO:josribgin@alu.edu.gva.es
+ATTENDEE:MAILTO:azure.Interior24@example.com
+CREATED:20251118T075911Z
+DESCRIPTION:*Organized by*\nMitchell Admin\njosribgin@alu.edu.gva.es [1]\n+
+ 1 555-555-5555 [2]\n*Contact Details*\nAzure Interior\nazure.Interior24@ex
+ ample.com [3]\n(870)-931-0505 [4]\n\n[1] mailto:josribgin@alu.edu.gva.es\n
+ [2] tel:+1%20555-555-5555\n[3] mailto:azure.Interior24@example.com\n[4] te
+ l:(870)-931-0505
+DTSTAMP:20251118T075911Z
+ORGANIZER;CN="YourCompany, Mitchell Admin":MAILTO:josribgin@alu.edu.gva.es
+SUMMARY:Changes in Designing
+END:VEVENT
+END:VCALENDAR
