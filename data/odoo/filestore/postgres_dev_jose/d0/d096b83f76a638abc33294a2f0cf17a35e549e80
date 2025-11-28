@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PYVOBJECT//NONSGML Version 1//EN
+BEGIN:VEVENT
+UID:20251127T212718Z - 19457@5ba2435159ac
+DTSTART:20251129T093000Z
+DTEND:20251129T110000Z
+ATTENDEE:MAILTO:enralopui@alu.edu.gva.es
+ATTENDEE:MAILTO:sersolvil@alu.edu.gva.es
+CREATED:20251127T212718Z
+DESCRIPTION:*Organized by*\nAdministrator\njosribgin@alu.edu.gva.es [1]\n*C
+ ontact Details*\nQuique Alonso Puig\nenralopui@alu.edu.gva.es [2]\n\n[1] m
+ ailto:josribgin@alu.edu.gva.es\n[2] mailto:enralopui@alu.edu.gva.es
+DTSTAMP:20251127T212718Z
+ORGANIZER;CN=Administrator:MAILTO:josribgin@alu.edu.gva.es
+SUMMARY:Reserva Pista 1 – Césped artificial
+END:VEVENT
+END:VCALENDAR

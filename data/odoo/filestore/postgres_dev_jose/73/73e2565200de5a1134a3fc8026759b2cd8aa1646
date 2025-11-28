@@ -1,0 +1,25 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PYVOBJECT//NONSGML Version 1//EN
+BEGIN:VEVENT
+UID:20251127T214949Z - 1420@5ba2435159ac
+DTSTART:20251129T093000Z
+DTEND:20251129T110000Z
+ATTENDEE:MAILTO:josribgin@alu.edu.gva.es
+ATTENDEE:MAILTO:hugpalale@alu.edu.gva.es
+ATTENDEE:MAILTO:enralopui@alu.edu.gva.es
+CREATED:20251127T214949Z
+DESCRIPTION:*Organized by*\nAdministrator\njosribgin@alu.edu.gva.es [1]\n*C
+ ontact Details*\nHugo Pallardo Aleixandre\nhugpalale@alu.edu.gva.es [2]\n\
+ n[1] mailto:josribgin@alu.edu.gva.es\n[2] mailto:hugpalale@alu.edu.gva.es
+DTSTAMP:20251127T214949Z
+LOCATION:Zona Interior
+ORGANIZER;CN=Administrator:MAILTO:josribgin@alu.edu.gva.es
+SUMMARY:Reserva Pista 3
+BEGIN:VALARM
+ACTION:AUDIO
+DESCRIPTION:Correo electrónico - 6 Horas
+TRIGGER;related=START:PT6H
+END:VALARM
+END:VEVENT
+END:VCALENDAR

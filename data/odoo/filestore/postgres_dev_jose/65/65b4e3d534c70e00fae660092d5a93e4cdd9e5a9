@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PYVOBJECT//NONSGML Version 1//EN
+BEGIN:VEVENT
+UID:20251127T214801Z - 3969@5ba2435159ac
+DTSTART:20251129T093000Z
+DTEND:20251129T110000Z
+ATTENDEE:MAILTO:josribgin@alu.edu.gva.es
+ATTENDEE:MAILTO:enralopui@alu.edu.gva.es
+ATTENDEE:MAILTO:hugpalale@alu.edu.gva.es
+CREATED:20251127T214801Z
+DESCRIPTION:*Organized by*\nAdministrator\njosribgin@alu.edu.gva.es [1]\n\n
+ [1] mailto:josribgin@alu.edu.gva.es
+DTSTAMP:20251127T214801Z
+LOCATION:Zona Interior
+ORGANIZER;CN=Administrator:MAILTO:josribgin@alu.edu.gva.es
+SUMMARY:Reserva Pista 1
+END:VEVENT
+END:VCALENDAR
