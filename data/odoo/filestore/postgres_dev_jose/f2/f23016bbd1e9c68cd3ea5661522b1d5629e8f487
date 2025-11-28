@@ -21602,6 +21602,72 @@ showPopup(ev){if(!this.jsonValue.late_elements){return;}
 super.showPopup(ev);}}
 registry.category("fields").add("stock_rescheduling_popover",{...popoverWidgetField,component:StockRescheculingPopover,});return __exports;});;
 
+/* /purchase/static/src/components/monetary_field_no_zero/monetary_field_no_zero.js */
+odoo.define('@purchase/components/monetary_field_no_zero/monetary_field_no_zero',['@web/views/fields/monetary/monetary_field','@web/core/registry','@web/core/utils/numbers'],function(require){'use strict';let __exports={};const{monetaryField,MonetaryField}=require("@web/views/fields/monetary/monetary_field");const{registry}=require("@web/core/registry");const{floatIsZero}=require("@web/core/utils/numbers");const MonetaryFieldNoZero=__exports.MonetaryFieldNoZero=class MonetaryFieldNoZero extends MonetaryField{static props={...MonetaryField.props,};get value(){const originalValue=super.value;const decimals=this.currencyDigits?this.currencyDigits[1]:2;return floatIsZero(originalValue,decimals)?false:originalValue;}}
+const monetaryFieldNoZero=__exports.monetaryFieldNoZero={...monetaryField,component:MonetaryFieldNoZero,};registry.category("fields").add("monetary_no_zero",monetaryFieldNoZero);return __exports;});;
+
+/* /purchase/static/src/components/open_match_line_widget/open_match_line_widget.js */
+odoo.define('@purchase/components/open_match_line_widget/open_match_line_widget',['@web/core/registry','@web/core/utils/hooks','@web/views/fields/standard_field_props','@odoo/owl'],function(require){'use strict';let __exports={};const{registry}=require("@web/core/registry");const{useService}=require("@web/core/utils/hooks");const{standardFieldProps}=require("@web/views/fields/standard_field_props");const{Component}=require("@odoo/owl");class OpenMatchLineWidget extends Component{static template="purchase.OpenMatchLineWidget";static props={...standardFieldProps};setup(){super.setup();this.action=useService("action");}
+async openMatchLine(){this.action.doActionButton({type:"object",resId:this.props.record.resId,name:"action_open_line",resModel:"purchase.bill.line.match",});}}
+registry.category("fields").add("open_match_line_widget",{component:OpenMatchLineWidget,});return __exports;});;
+
+/* /purchase/static/src/components/purchase_file_uploader/purchase_file_uploader.js */
+odoo.define('@purchase/components/purchase_file_uploader/purchase_file_uploader',['@web/core/utils/hooks','@web/core/registry','@web/views/widgets/standard_widget_props','@web/views/fields/file_handler','@web/core/errors/error_dialogs','@web/core/l10n/translation','@odoo/owl'],function(require){'use strict';let __exports={};const{useService}=require("@web/core/utils/hooks");const{registry}=require("@web/core/registry");const{standardWidgetProps}=require("@web/views/widgets/standard_widget_props");const{FileUploader}=require("@web/views/fields/file_handler");const{WarningDialog}=require("@web/core/errors/error_dialogs");const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"purchase",...args);const{Component}=require("@odoo/owl");const PurchaseFileUploader=__exports.PurchaseFileUploader=class PurchaseFileUploader extends Component{static template="purchase.DocumentFileUploader";static props={...standardWidgetProps,record:{type:Object,optional:true},list:{type:Object,optional:true},};static components={FileUploader};setup(){this.orm=useService("orm");this.action=useService("action");this.dialog=useService("dialog");this.attachmentIdsToProcess=[];}
+get resModel(){return"purchase.order";}
+get records(){return this.props.record?[this.props.record]:this.props.list.records;}
+async getIds(){if(this.props.record){return this.props.record.data.id;}
+return this.props.list.getResIds(true);}
+onClick(ev){if(this.env.config.viewType!=="list"){return;}
+const vendorSet=new Set(this.props.list.selection.map((record)=>record.data.partner_id.id));if(vendorSet.size>1){this.dialog.add(WarningDialog,{title:_t("Validation Error"),message:_t("You can only upload a bill for a single vendor at a time."),});return false;}}
+async onFileUploaded(file){const att_data={name:file.name,mimetype:file.type,datas:file.data,};const[att_id]=await this.orm.create("ir.attachment",[att_data],{context:{...this.env.searchModel.context},});this.attachmentIdsToProcess.push(att_id);}
+async onUploadComplete(){const resModel=this.resModel;const ids=await this.getIds();let action;try{action=await this.orm.call(resModel,"action_create_invoice",[ids,this.attachmentIdsToProcess],{context:{...this.env.searchModel.context}});}finally{this.attachmentIdsToProcess=[];}
+this.action.doAction(action);}}
+const purchaseFileUploader=__exports.purchaseFileUploader={component:PurchaseFileUploader,};registry.category("view_widgets").add("purchase_file_uploader",purchaseFileUploader);return __exports;});;
+
+/* /purchase/static/src/product_catalog/kanban_record.js */
+odoo.define('@purchase/product_catalog/kanban_record',['@product/product_catalog/kanban_record','@purchase/product_catalog/purchase_order_line/purchase_order_line','@web/core/utils/patch','@web/core/utils/hooks'],function(require){'use strict';let __exports={};const{ProductCatalogKanbanRecord}=require("@product/product_catalog/kanban_record");const{ProductCatalogPurchaseOrderLine}=require("@purchase/product_catalog/purchase_order_line/purchase_order_line");const{patch}=require("@web/core/utils/patch");const{useService}=require("@web/core/utils/hooks");patch(ProductCatalogKanbanRecord.prototype,{setup(){super.setup();this.orm=useService("orm");},get orderLineComponent(){if(this.env.orderResModel==="purchase.order"){return ProductCatalogPurchaseOrderLine;}
+return super.orderLineComponent;},});return __exports;});;
+
+/* /purchase/static/src/product_catalog/kanban_renderer.js */
+odoo.define('@purchase/product_catalog/kanban_renderer',['@web/core/utils/hooks','@product/product_catalog/kanban_renderer'],function(require){'use strict';let __exports={};const{useService}=require("@web/core/utils/hooks");const{ProductCatalogKanbanRenderer}=require("@product/product_catalog/kanban_renderer");const PurchaseProductCatalogKanbanRenderer=__exports.PurchaseProductCatalogKanbanRenderer=class PurchaseProductCatalogKanbanRenderer extends ProductCatalogKanbanRenderer{static template="PurchaseProductCatalogKanbanRenderer";setup(){super.setup();this.action=useService("action");}
+get createProductContext(){return{default_seller_ids:[{partner_id:this.props.list._config.context.partner_id}],};}
+async createProduct(){await this.action.doAction({type:"ir.actions.act_window",res_model:"product.product",target:"new",views:[[false,"form"]],view_mode:"form",context:this.createProductContext,},{props:{onSave:async(record,params)=>{await this.props.list.model.load();this.props.list.model.useSampleModel=false;this.action.doAction({type:"ir.actions.act_window_close",});},}});}}
+return __exports;});;
+
+/* /purchase/static/src/product_catalog/kanban_view.js */
+odoo.define('@purchase/product_catalog/kanban_view',['@web/core/registry','@product/product_catalog/kanban_view','@purchase/product_catalog/kanban_renderer'],function(require){'use strict';let __exports={};const{registry}=require("@web/core/registry");const{productCatalogKanbanView}=require("@product/product_catalog/kanban_view");const{PurchaseProductCatalogKanbanRenderer}=require("@purchase/product_catalog/kanban_renderer");const purchaseProductCatalogKanbanView=__exports.purchaseProductCatalogKanbanView={...productCatalogKanbanView,Renderer:PurchaseProductCatalogKanbanRenderer,};registry.category("views").add("purchase_product_kanban_catalog",purchaseProductCatalogKanbanView);return __exports;});;
+
+/* /purchase/static/src/product_catalog/purchase_order_line/purchase_order_line.js */
+odoo.define('@purchase/product_catalog/purchase_order_line/purchase_order_line',['@product/product_catalog/order_line/order_line'],function(require){'use strict';let __exports={};const{ProductCatalogOrderLine}=require("@product/product_catalog/order_line/order_line");const ProductCatalogPurchaseOrderLine=__exports.ProductCatalogPurchaseOrderLine=class ProductCatalogPurchaseOrderLine extends ProductCatalogOrderLine{static props={...ProductCatalogPurchaseOrderLine.props,min_qty:{type:Number,optional:true},packaging:{type:Object,optional:true},};get highlightUoM(){return true;}}
+return __exports;});;
+
+/* /purchase/static/src/toaster_button/toaster_button_widget.js */
+odoo.define('@purchase/toaster_button/toaster_button_widget',['@web/core/registry','@web/core/utils/hooks','@odoo/owl','@web/views/widgets/standard_widget_props'],function(require){'use strict';let __exports={};const{registry}=require("@web/core/registry");const{useService}=require("@web/core/utils/hooks");const{Component}=require("@odoo/owl");const{standardWidgetProps}=require("@web/views/widgets/standard_widget_props");class ButtonWithNotification extends Component{static template="purchase.ButtonWithNotification";static props={...standardWidgetProps,method:String,title:String,};setup(){this.orm=useService("orm");this.notification=useService("notification");}
+async onClick(){const result=await this.orm.call(this.props.record.resModel,this.props.method,[this.props.record.resId,]);const message=result.toast_message;this.notification.add(message,{type:"success"});}}
+const buttonWithNotification=__exports.buttonWithNotification={component:ButtonWithNotification,extractProps:({attrs})=>{return{method:attrs.button_name,title:attrs.title,};},};registry.category("view_widgets").add("toaster_button",buttonWithNotification);return __exports;});;
+
+/* /purchase/static/src/views/purchase_dashboard.js */
+odoo.define('@purchase/views/purchase_dashboard',['@web/core/utils/hooks','@odoo/owl'],function(require){'use strict';let __exports={};const{useService}=require("@web/core/utils/hooks");const{Component,onWillStart,onWillUpdateProps}=require("@odoo/owl");const PurchaseDashBoard=__exports.PurchaseDashBoard=class PurchaseDashBoard extends Component{static template="purchase.PurchaseDashboard";static props={list:{type:Object,optional:true}};setup(){this.orm=useService("orm");this.action=useService("action");onWillStart(async()=>{await this.updateDashboardState();});onWillUpdateProps(async()=>{await this.updateDashboardState();});}
+async updateDashboardState(){this.purchaseData=await this.orm.call("purchase.order","retrieve_dashboard");this.multiuser=JSON.stringify(this.purchaseData.global)!==JSON.stringify(this.purchaseData.my);}
+setSearchContext(ev){const filter_name=ev.currentTarget.getAttribute("filter_name");const filters=filter_name.split(",");const searchItems=this.env.searchModel.getSearchItems((item)=>filters.includes(item.name));this.env.searchModel.query=[];for(const item of searchItems){this.env.searchModel.toggleSearchItem(item.id);}}}
+return __exports;});;
+
+/* /purchase/static/src/views/purchase_kanbanview.js */
+odoo.define('@purchase/views/purchase_kanbanview',['@web/core/registry','@account/views/file_upload_kanban/file_upload_kanban_view','@account/views/file_upload_kanban/file_upload_kanban_renderer','@purchase/views/purchase_dashboard'],function(require){'use strict';let __exports={};const{registry}=require("@web/core/registry");const{fileUploadKanbanView}=require("@account/views/file_upload_kanban/file_upload_kanban_view");const{FileUploadKanbanRenderer}=require("@account/views/file_upload_kanban/file_upload_kanban_renderer");const{PurchaseDashBoard}=require("@purchase/views/purchase_dashboard");const PurchaseDashBoardKanbanRenderer=__exports.PurchaseDashBoardKanbanRenderer=class PurchaseDashBoardKanbanRenderer extends FileUploadKanbanRenderer{static template="purchase.PurchaseKanbanView";static components=Object.assign({},FileUploadKanbanRenderer.components,{PurchaseDashBoard});}
+const PurchaseDashBoardKanbanView=__exports.PurchaseDashBoardKanbanView={...fileUploadKanbanView,Renderer:PurchaseDashBoardKanbanRenderer,};registry.category("views").add("purchase_dashboard_kanban",PurchaseDashBoardKanbanView);return __exports;});;
+
+/* /purchase/static/src/views/purchase_listview.js */
+odoo.define('@purchase/views/purchase_listview',['@web/core/registry','@purchase/views/purchase_dashboard','@purchase/components/purchase_file_uploader/purchase_file_uploader','@account/views/file_upload_list/file_upload_list_controller','@account/views/file_upload_list/file_upload_list_renderer','@account/views/file_upload_list/file_upload_list_view'],function(require){'use strict';let __exports={};const{registry}=require("@web/core/registry");const{PurchaseDashBoard}=require("@purchase/views/purchase_dashboard");const{PurchaseFileUploader}=require("@purchase/components/purchase_file_uploader/purchase_file_uploader");const{FileUploadListController}=require("@account/views/file_upload_list/file_upload_list_controller");const{FileUploadListRenderer}=require("@account/views/file_upload_list/file_upload_list_renderer");const{fileUploadListView}=require("@account/views/file_upload_list/file_upload_list_view");const PurchaseDashBoardRenderer=__exports.PurchaseDashBoardRenderer=class PurchaseDashBoardRenderer extends FileUploadListRenderer{static template="purchase.ListRenderer";static components=Object.assign({},FileUploadListRenderer.components,{PurchaseDashBoard});}
+const PurchaseFileUploadListController=__exports.PurchaseFileUploadListController=class PurchaseFileUploadListController extends FileUploadListController{static template=`purchase.ListView`;static components={...FileUploadListController.components,PurchaseFileUploader,};}
+const PurchaseDashBoardListView=__exports.PurchaseDashBoardListView={...fileUploadListView,Controller:PurchaseFileUploadListController,Renderer:PurchaseDashBoardRenderer,};registry.category("views").add("purchase_dashboard_list",PurchaseDashBoardListView);return __exports;});;
+
+/* /purchase/static/src/js/tours/purchase.js */
+odoo.define('@purchase/js/tours/purchase',['@web/core/l10n/translation','@web/core/registry','@web_tour/tour_utils','@purchase/js/tours/purchase_steps'],function(require){'use strict';let __exports={};const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"purchase",...args);const{registry}=require("@web/core/registry");const{stepUtils}=require("@web_tour/tour_utils");const PurchaseAdditionalTourSteps=require("@purchase/js/tours/purchase_steps")[Symbol.for("default")];registry.category("web_tour.tours").add("purchase_tour",{url:"/odoo",steps:()=>[stepUtils.showAppsMenuItem(),{isActive:["community"],trigger:'.o_app[data-menu-xmlid="purchase.menu_purchase_root"]',content:_t("Let's try the Purchase app to manage the flow from purchase to reception and invoice control."),tooltipPosition:"right",run:"click",},{isActive:["enterprise"],trigger:'.o_app[data-menu-xmlid="purchase.menu_purchase_root"]',content:_t("Let's try the Purchase app to manage the flow from purchase to reception and invoice control."),tooltipPosition:"bottom",run:"click",},{trigger:".o_purchase_order",},{trigger:".o_list_button_add",content:_t("Let's create your first request for quotation."),tooltipPosition:"bottom",run:"click",},{trigger:".o_purchase_order",},{trigger:".o_field_res_partner_many2one[name='partner_id'] input",content:_t("Search a vendor name, or create one on the fly."),tooltipPosition:"bottom",async run(actions){const input=this.anchor.querySelector("input");await actions.edit("Azure Interior",input||this.anchor);},},{isActive:["auto"],trigger:".ui-menu-item > a:contains('Azure Interior')",run:"click",},{trigger:".o_field_res_partner_many2one[name='partner_id'] .o_external_button",},{trigger:".o_field_x2many_list_row_add > a",content:_t("Add some products or services to your quotation."),tooltipPosition:"bottom",run:"click",},{trigger:".o_purchase_order",},{trigger:".o_field_widget[name=product_id], .o_field_widget[name=product_template_id]",content:_t("Select a product, or create a new one on the fly."),tooltipPosition:"right",async run(actions){const input=this.anchor.querySelector("input");await actions.edit("DESK0001",input||this.anchor);},},{isActive:["auto"],trigger:"a:contains('DESK0001')",run:"click",},{trigger:".o_field_text[name='name'] textarea:value(DESK0001)",},{trigger:".o_purchase_order",},{trigger:"div.o_field_widget[name='product_qty'] input ",content:_t("Indicate the product quantity you want to order."),tooltipPosition:"right",run:"edit 12.0",},{isActive:["auto","mobile"],trigger:".o_statusbar_buttons .o_arrow_button_current[name='action_rfq_send']",},...stepUtils.statusbarButtonsSteps("Send by Email",_t("Send the request for quotation to your vendor.")),{trigger:".modal-footer button[name='action_send_mail']",},{trigger:".modal-footer button[name='action_send_mail']",content:_t("Send the request for quotation to your vendor."),tooltipPosition:"left",run:"click",},{trigger:".o_purchase_order",},{content:"Select price",trigger:'tbody tr.o_data_row .o_list_number[name="price_unit"]',},{trigger:"tbody tr.o_data_row .o_list_number[name='price_unit']",content:_t("Once you get the price from the vendor, you can complete the purchase order with the right price."),tooltipPosition:"right",run:"edit 200.00",},{isActive:["auto"],trigger:".o_purchase_order",run:"click",},...stepUtils.statusbarButtonsSteps("Confirm Order",_t("Confirm your purchase.")),...new PurchaseAdditionalTourSteps()._get_purchase_stock_steps(),],});return __exports;});;
+
+/* /purchase/static/src/js/tours/purchase_steps.js */
+odoo.define('@purchase/js/tours/purchase_steps',[],function(require){'use strict';let __exports={};class PurchaseAdditionalTourSteps{_get_purchase_stock_steps(){return[{isActive:["auto"],trigger:".o_purchase_order",run:"click",},];}}
+__exports[Symbol.for("default")]=PurchaseAdditionalTourSteps;return __exports;});;
+
 /* /resource_mail/static/src/components/avatar_card_resource/avatar_card_resource_popover.js */
 odoo.define('@resource_mail/components/avatar_card_resource/avatar_card_resource_popover',['@odoo/owl','@web/core/utils/hooks','@mail/core/web/open_chat_hook','@mail/discuss/web/avatar_card/avatar_card_popover'],function(require){'use strict';let __exports={};const{onWillStart}=require("@odoo/owl");const{useService}=require("@web/core/utils/hooks");const{useOpenChat}=require("@mail/core/web/open_chat_hook");const{AvatarCardPopover}=require("@mail/discuss/web/avatar_card/avatar_card_popover");const AvatarCardResourcePopover=__exports.AvatarCardResourcePopover=class AvatarCardResourcePopover extends AvatarCardPopover{static template="resource_mail.AvatarCardResourcePopover";static props={...AvatarCardPopover.props,model:{type:String,optional:true},recordModel:{type:String,optional:true,},};static defaultProps={...AvatarCardPopover.defaultProps,recordModel:"resource.resource",};setup(){this.orm=useService("orm");this.actionService=useService("action");this.openChat=useOpenChat("res.users");onWillStart(this.onWillStart);}
 async onWillStart(){[this.record]=await this.orm.call(this.props.recordModel,'get_avatar_card_data',[[this.props.id],this.fieldNames],{});await Promise.all(this.loadAdditionalData());}
@@ -22184,6 +22250,81 @@ openStockReport(){const additionalContext={};if(this.controller.dateAsString){ad
 return this.actionService.doAction("stock.action_product_stock_view",{additionalContext});}
 toggleInventoryValuationFold(){this.state.displayInventoryValuationLine=!this.state.displayInventoryValuationLine;}}
 registry.category("actions").add("stock_valuation_report",StockValuationReport);return __exports;});;
+
+/* /purchase_stock/static/src/js/tours/purchase_stock.js */
+odoo.define('@purchase_stock/js/tours/purchase_stock',['@web/core/l10n/translation','@purchase/js/tours/purchase_steps','@web/core/utils/patch'],function(require){'use strict';let __exports={};const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"purchase_stock",...args);const PurchaseAdditionalTourSteps=require("@purchase/js/tours/purchase_steps")[Symbol.for("default")];const{patch}=require("@web/core/utils/patch");patch(PurchaseAdditionalTourSteps.prototype,{_get_purchase_stock_steps:function(){return[{trigger:".o-form-buttonbox button[name='action_view_picking']",},{trigger:".o-form-buttonbox button[name='action_view_picking']",content:_t("Receive the ordered products."),tooltipPosition:"bottom",run:'click',},{trigger:".o_statusbar_buttons button[name='button_validate']",content:_t("Validate the receipt of all ordered products."),tooltipPosition:"bottom",run:'click',},{trigger:".modal-dialog",},{trigger:".modal-footer .btn-primary",content:_t("Process all the receipt quantities."),tooltipPosition:"bottom",run:"click",},{trigger:".o_back_button a, .breadcrumb-item:not('.active'):last",content:_t('Go back to the purchase order to generate the vendor bill.'),tooltipPosition:'bottom',run:"click",},{trigger:".o_statusbar_buttons button[name='action_create_invoice']",content:_t("Generate the draft vendor bill."),tooltipPosition:"bottom",run:'click',}];}});__exports[Symbol.for("default")]=PurchaseAdditionalTourSteps;return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/kanban_controller.js */
+odoo.define('@purchase_stock/product_catalog/kanban_controller',['@product/product_catalog/kanban_controller','@odoo/owl','@web/core/utils/timing'],function(require){'use strict';let __exports={};const{ProductCatalogKanbanController}=require("@product/product_catalog/kanban_controller");const{useSubEnv,useEnv}=require("@odoo/owl");const{useDebounced}=require("@web/core/utils/timing");const PurchaseSuggestCatalogKanbanController=__exports.PurchaseSuggestCatalogKanbanController=class PurchaseSuggestCatalogKanbanController extends ProductCatalogKanbanController{setup(){super.setup();this.suggest=useEnv().suggest;this._computeTotalEstimatedPrice=useEnv()._computeTotalEstimatedPrice;Object.assign(this.suggest,{currencyId:this.props.context.product_catalog_currency_id,digits:this.props.context.product_catalog_digits,poState:this.props.context.product_catalog_order_state,vendorName:this.props.context.vendor_name,warehouse_id:this.props.context.warehouse_id,});useSubEnv({addAllProducts:()=>this.onAddAll(),toggleSuggest:()=>this.toggleSuggest(),reloadKanban:()=>this._kanbanReload(),debouncedReloadKanban:useDebounced(async()=>{this._kanbanReload();},500),});}
+async _kanbanReload(){this.env.searchModel.searchPanelInfo.shouldReload=true;await this.env.searchModel._notify();await this._computeTotalEstimatedPrice();}
+async onAddAll(){const{searchModel}=this.env;const{sectionId}=searchModel.selectedSection;const lineCountChange=await this.model.orm.call("purchase.order","action_purchase_order_suggest",[this.props.context.product_catalog_order_id],{context:searchModel.globalContext});searchModel.toggleFilters(["suggested","products_in_purchase_order"],true);searchModel.trigger("section-line-count-change",{sectionId,lineCountChange,});}
+toggleSuggest(){this.suggest.suggestToggle.isOn=!this.suggest.suggestToggle.isOn;localStorage.setItem("purchase_stock.suggest_toggle_state",JSON.stringify({isOn:this.suggest.suggestToggle.isOn}));this.env.searchModel.toggleFilters(["suggested","products_in_purchase_order"],this.suggest.suggestToggle.isOn);}}
+return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/kanban_model.js */
+odoo.define('@purchase_stock/product_catalog/kanban_model',['@product/product_catalog/kanban_model','@purchase_stock/product_catalog/utils'],function(require){'use strict';let __exports={};const{ProductCatalogKanbanModel}=require("@product/product_catalog/kanban_model");const{getSuggestToggleState}=require("@purchase_stock/product_catalog/utils");const PurchaseSuggestCatalogKanbanModel=__exports.PurchaseSuggestCatalogKanbanModel=class PurchaseSuggestCatalogKanbanModel extends ProductCatalogKanbanModel{async _loadData(params){const sortBySuggested=(list)=>{const suggestProducts=list.filter((record)=>record.suggested_qty>0);const notSuggestedProducts=list.filter((record)=>record.suggested_qty==0);return[...suggestProducts,...notSuggestedProducts];};const suggest=getSuggestToggleState(this.config.context.product_catalog_order_state);const result=await super._loadData(params);if(!suggest.isOn||!result.records.some((r)=>r.suggested_qty>0)){return result;}
+if(!params.isMonoRecord){if(params.groupBy?.length){for(const group of result.groups){group.list.records=sortBySuggested(group.list.records);}}else{result.records=sortBySuggested(result.records);}}
+return result;}
+_getOrderLinesInfoParams(loadParams,productIds){const base=super._getOrderLinesInfoParams(loadParams,productIds);return{...base,...loadParams.context};}}
+return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/kanban_renderer.js */
+odoo.define('@purchase_stock/product_catalog/kanban_renderer',['@web/core/utils/patch','@purchase/product_catalog/kanban_renderer','@purchase_stock/product_catalog/record/kanban_record'],function(require){'use strict';let __exports={};const{patch}=require("@web/core/utils/patch");const{PurchaseProductCatalogKanbanRenderer}=require("@purchase/product_catalog/kanban_renderer");const{ProductCatalogPurchaseSuggestKanbanRecord}=require("@purchase_stock/product_catalog/record/kanban_record");patch(PurchaseProductCatalogKanbanRenderer,{components:{...PurchaseProductCatalogKanbanRenderer.components,KanbanRecord:ProductCatalogPurchaseSuggestKanbanRecord,},});return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/kanban_view.js */
+odoo.define('@purchase_stock/product_catalog/kanban_view',['@web/core/utils/patch','@purchase/product_catalog/kanban_view','@purchase_stock/product_catalog/search/search_panel','@purchase_stock/product_catalog/search/search_model','@purchase_stock/product_catalog/kanban_controller','@purchase_stock/product_catalog/kanban_model'],function(require){'use strict';let __exports={};const{patch}=require("@web/core/utils/patch");const{purchaseProductCatalogKanbanView}=require("@purchase/product_catalog/kanban_view");const{PurchaseSuggestCatalogSearchPanel}=require("@purchase_stock/product_catalog/search/search_panel");const{PurchaseStockProductCatalogSearchModel}=require("@purchase_stock/product_catalog/search/search_model");const{PurchaseSuggestCatalogKanbanController}=require("@purchase_stock/product_catalog/kanban_controller");const{PurchaseSuggestCatalogKanbanModel}=require("@purchase_stock/product_catalog/kanban_model");patch(purchaseProductCatalogKanbanView,{Controller:PurchaseSuggestCatalogKanbanController,SearchPanel:PurchaseSuggestCatalogSearchPanel,Model:PurchaseSuggestCatalogKanbanModel,SearchModel:PurchaseStockProductCatalogSearchModel,});return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/record/kanban_record.js */
+odoo.define('@purchase_stock/product_catalog/record/kanban_record',['@product/product_catalog/kanban_record','@purchase_stock/product_catalog/record/purchase_order_line'],function(require){'use strict';let __exports={};const{ProductCatalogKanbanRecord}=require("@product/product_catalog/kanban_record");const{ProductCatalogPurchaseSuggestOrderLine}=require("@purchase_stock/product_catalog/record/purchase_order_line");const ProductCatalogPurchaseSuggestKanbanRecord=__exports.ProductCatalogPurchaseSuggestKanbanRecord=class ProductCatalogPurchaseSuggestKanbanRecord extends ProductCatalogKanbanRecord{getRecordClasses(...args){const classes=super.getRecordClasses(args)||"";const catalogData=this.productCatalogData||{};if(catalogData.suggested_qty&&catalogData.suggested_qty==catalogData.quantity){return classes+" o_hide_suggest_qty";}
+return classes;}
+get orderLineComponent(){return ProductCatalogPurchaseSuggestOrderLine;}
+addProduct(){const{min_qty=1,suggested_qty=0}=this.productCatalogData;super.addProduct(Math.max(min_qty,suggested_qty,1));}}
+return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/record/purchase_order_line.js */
+odoo.define('@purchase_stock/product_catalog/record/purchase_order_line',['@purchase/product_catalog/purchase_order_line/purchase_order_line'],function(require){'use strict';let __exports={};const{ProductCatalogPurchaseOrderLine}=require("@purchase/product_catalog/purchase_order_line/purchase_order_line");const ProductCatalogPurchaseSuggestOrderLine=__exports.ProductCatalogPurchaseSuggestOrderLine=class ProductCatalogPurchaseSuggestOrderLine extends ProductCatalogPurchaseOrderLine{static props={...ProductCatalogPurchaseOrderLine.props,suggested_qty:{type:Number,optional:true},};}
+return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/search/search_model.js */
+odoo.define('@purchase_stock/product_catalog/search/search_model',['@account/components/product_catalog/search/search_model','@odoo/owl','@purchase_stock/product_catalog/utils'],function(require){'use strict';let __exports={};const{AccountProductCatalogSearchModel}=require("@account/components/product_catalog/search/search_model");const{useSubEnv}=require("@odoo/owl");const{getSuggestToggleState}=require("@purchase_stock/product_catalog/utils");const PurchaseStockProductCatalogSearchModel=__exports.PurchaseStockProductCatalogSearchModel=class PurchaseStockProductCatalogSearchModel extends AccountProductCatalogSearchModel{setup(){super.setup(...arguments);this.suggest={numberOfDays:0,basedOn:null,percentFactor:0,suggestToggle:{isOn:false},totalEstimatedPrice:0,};useSubEnv({suggest:this.suggest,_computeTotalEstimatedPrice:()=>this._computeTotalEstimatedPrice(),});}
+async load(config){Object.assign(this.suggest,{numberOfDays:config.context.vendor_suggest_days??this.suggest.numberOfDays,basedOn:config.context.vendor_suggest_based_on??this.suggest.basedOn,percentFactor:config.context.vendor_suggest_percent??this.suggest.percentFactor,suggestToggle:getSuggestToggleState(config.context.product_catalog_order_state),});if(this.suggest.suggestToggle.isOn){config.context["search_default_suggested"]=true;config.context["search_default_products_in_purchase_order"]=true;}
+await super.load(config);if(this.suggest.suggestToggle.isOn){this._computeTotalEstimatedPrice();}}
+async _fetchSections(){this._editSuggestContext();super._fetchSections(...arguments);}
+toggleCategoryValue(){super.toggleCategoryValue(...arguments);if(this.suggest.suggestToggle.isOn){this._computeTotalEstimatedPrice();}}
+async _computeTotalEstimatedPrice(){this._editSuggestContext();const product_prices=await this.orm.searchRead("product.product",this.domain,["suggest_estimated_price"],{context:this.globalContext});this.suggest.totalEstimatedPrice=product_prices.reduce((sum,p)=>sum+Number(p.suggest_estimated_price||0),0);}
+toggleFilters(filterNames,turnOn){const searchFilters=new Map(Object.values(this.searchItems).map((i)=>[i.name,i]));const activeFilters=new Set(this.query.map((q)=>q.searchItemId));const toToggle=[];for(const name of filterNames){const item=searchFilters.get(name);const isOn=activeFilters.has(item.id);if((turnOn&&!isOn)||(!turnOn&&isOn)){toToggle.push(item.id);}}
+for(let i=0;i<toToggle.length;i++){const isLast=i===toToggle.length-1;this.blockNotification=!isLast;this.toggleSearchItem(toToggle[i]);}
+if(this.suggest.suggestToggle.isOn){this._computeTotalEstimatedPrice();}
+if(toToggle.length==0){this._notify();}}
+_editSuggestContext(){const suggestContext={suggest_domain:this.domain,suggest_based_on:this.suggest.basedOn,suggest_days:this.suggest.numberOfDays,suggest_percent:this.suggest.percentFactor,sectionId:this.selectedSection.sectionId??false,};if(!this.suggest.suggestToggle.isOn){for(const k of new Set([...Object.keys(suggestContext)])){delete this.globalContext[k];}}else{this.globalContext={...this.globalContext,...suggestContext};}}}
+return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/search/search_panel.js */
+odoo.define('@purchase_stock/product_catalog/search/search_panel',['@odoo/owl','@web/core/l10n/translation','@account/components/product_catalog/search/search_panel','@purchase_stock/product_catalog/search/time_period_selection_fields','@web/views/fields/formatters','@web/core/utils/numbers'],function(require){'use strict';let __exports={};const{useEnv}=require("@odoo/owl");const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"purchase_stock",...args);const{AccountProductCatalogSearchPanel}=require("@account/components/product_catalog/search/search_panel");const{TimePeriodSelectionField}=require("@purchase_stock/product_catalog/search/time_period_selection_fields");const{formatMonetary}=require("@web/views/fields/formatters");const{clamp}=require("@web/core/utils/numbers");const PurchaseSuggestCatalogSearchPanel=__exports.PurchaseSuggestCatalogSearchPanel=class PurchaseSuggestCatalogSearchPanel extends AccountProductCatalogSearchPanel{static template="purchase_stock.ProductCatalogSearchPanel";static components={TimePeriodSelectionField};static basedOnOptions=[["actual_demand","Forecasted"],["one_week","Last 7 days"],["30_days","Last 30 days"],["three_months","Last 3 months"],["one_year","Last 12 months"],["last_year","Same month last year"],["last_year_m_plus_1","Next month last year"],["last_year_m_plus_2","After next month last year"],["last_year_quarter","Last year quarter"],];setup(){super.setup();this.suggest=useEnv().suggest;this.toggleSuggest=useEnv().toggleSuggest;this.debouncedReloadKanban=useEnv().debouncedReloadKanban;this.reloadKanban=useEnv().reloadKanban;this.addAllProducts=useEnv().addAllProducts;this.displaySuggest=this.suggest.poState==="draft";this.tooltipTitle=_t("Get recommendations of products to purchase at %(vendorName)s based on stock on hand, incoming quantities, "+"and expected sales volumes.\n\n Set a reference period to estimate sales, and use the percentage "+"to take into account seasonality and the increase/decrease of business.",{vendorName:this.suggest.vendorName});}
+onDaysInput(ev){const value=parseInt(ev.target.value,10)||0;const boundedVal=clamp(value,0,999);this.suggest.numberOfDays=boundedVal;ev.target.value=boundedVal;this.debouncedReloadKanban();}
+onPercentFactorInput(ev){const value=parseInt(ev.target.value,10)||0;const boundedVal=clamp(value,0,999);this.suggest.percentFactor=boundedVal;ev.target.value=boundedVal;this.debouncedReloadKanban();}
+get estimatedSuggestPrice(){const{currencyId,digits}=this.suggest;return formatMonetary(this.suggest.totalEstimatedPrice,{currencyId,digits});}
+get timePeriodProps(){return{name:"based_on",required:true,record:{data:{based_on:this.suggest.basedOn},fields:{based_on:{selection:this.constructor.basedOnOptions}},},onChange:(val)=>{this.suggest.basedOn=val;this.reloadKanban();},};}
+selectAllOnClick(ev){const el=ev.currentTarget;if(el.disabled||el.readOnly){return;}
+ev.preventDefault();el.focus();el.select();}}
+return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/search/time_period_selection_fields.js */
+odoo.define('@purchase_stock/product_catalog/search/time_period_selection_fields',['@web/core/l10n/translation','@web/core/registry','@web/views/fields/selection/selection_field'],function(require){'use strict';let __exports={};const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"purchase_stock",...args);const{registry}=require("@web/core/registry");const{selectionField,SelectionField}=require("@web/views/fields/selection/selection_field");const{DateTime}=luxon;const TimePeriodSelectionField=__exports.TimePeriodSelectionField=class TimePeriodSelectionField extends SelectionField{static props={...SelectionField.props,onChange:{type:Function,optional:true},};onChange(ev){super.onChange(ev);if(this.props.onChange){this.props.onChange(ev);}}
+get options(){const date1=DateTime.now().set({day:1}).minus({years:1});const date2=date1.plus({months:1});const date3=date1.plus({months:2});const options=[];for(const option of this.props.record.fields[this.props.name].selection){if(option[0]==="last_year"){options.push([option[0],`${date1.monthLong} ${date1.year}`]);}else if(option[0]==="last_year_m_plus_1"){options.push([option[0],`${date2.monthLong} ${date2.year}`]);}else if(option[0]==="last_year_m_plus_2"){options.push([option[0],`${date3.monthLong} ${date3.year}`]);}else if(option[0]==="last_year_quarter"){let beginDate=date1.monthShort;const endDate=`${date3.monthShort} ${date3.year}`;if(date1.year!==date3.year){beginDate+=` ${date1.year}`;}
+options.push([option[0],`${beginDate}-${endDate}`]);}else if(option[0]!==false&&option[1]!==""){options.push(option);}}
+return options;}}
+const timePeriodSelectionField=__exports.timePeriodSelectionField={...selectionField,component:TimePeriodSelectionField,displayName:_t("Time Perdiod Selection"),supportedTypes:["selection"],};registry.category("fields").add("time_period_selection",timePeriodSelectionField);return __exports;});;
+
+/* /purchase_stock/static/src/product_catalog/utils.js */
+odoo.define('@purchase_stock/product_catalog/utils',[],function(require){'use strict';let __exports={};__exports.getSuggestToggleState=getSuggestToggleState;function getSuggestToggleState(poState){if(poState=="draft"){const toggle=JSON.parse(localStorage.getItem("purchase_stock.suggest_toggle_state"));return toggle??{isOn:false};}
+return{isOn:false};}
+return __exports;});;
+
+/* /purchase_stock/static/src/stock_valuation/stock_valuation_report.js */
+odoo.define('@purchase_stock/stock_valuation/stock_valuation_report',['@web/core/l10n/translation','@web/core/utils/patch','@stock_account/stock_valuation/stock_valuation_report'],function(require){'use strict';let __exports={};const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"purchase_stock",...args);const{patch}=require("@web/core/utils/patch");const{StockValuationReport}=require("@stock_account/stock_valuation/stock_valuation_report");patch(StockValuationReport.prototype,{get accrual(){const accrual=super.accrual;const notInvoicedReceivedGoods=this.data.not_invoiced_received_goods;notInvoicedReceivedGoods.display_name=_t("Goods Received Not Invoiced");notInvoicedReceivedGoods.method=this.openPurchaseOrder.bind(this);notInvoicedReceivedGoods.index=accrual.lines.length;accrual.lines.push(this.data.not_invoiced_received_goods);accrual.value+=this.data.not_invoiced_received_goods.value;this.purchaseOrderIds=notInvoicedReceivedGoods.lines.map((line)=>line.id);return accrual;},get notInvoicedReceivedValuation(){return this.formatMonetary(this.data.not_invoiced_received_goods.value);},openPurchaseOrder(line=false){const action={type:"ir.actions.act_window",name:_t("Purchase Orders"),res_model:"purchase.order",views:[[false,"list"],[false,"form"]],target:"current",}
+if(line?.id){action.views=[[false,"form"]],action.res_id=line.id;}else{action.domain=[["id","in",this.purchaseOrderIds]];}
+return this.actionService.doAction(action);},});return __exports;});;
 
 /* /account_peppol/static/src/components/peppol_info/peppol_info.js */
 odoo.define('@account_peppol/components/peppol_info/peppol_info',['@odoo/owl','@web/core/registry','@web/core/utils/hooks','@web/core/l10n/translation','@web/webclient/actions/action_service'],function(require){'use strict';let __exports={};const{Component}=require("@odoo/owl");const{registry}=require("@web/core/registry");const{useService}=require("@web/core/utils/hooks");const{appTranslateFn}=require("@web/core/l10n/translation");const _t=(str,...args)=>appTranslateFn(str,"account_peppol",...args);const{standardActionServiceProps}=require("@web/webclient/actions/action_service");class WhatIsPeppol extends Component{static props={...standardActionServiceProps};static template="account_peppol.WhatIsPeppol";setup(){super.setup();this.actionService=useService("action");}
@@ -38348,6 +38489,231 @@ registerTemplate("reception_report_buttons", `/stock/static/src/xml/report_stock
     </button>
 </t>
 `);
+registerTemplate("purchase.OpenMatchLineWidget", `/purchase/static/src/components/open_match_line_widget/open_match_line_widget.xml`, `<t t-name="purchase.OpenMatchLineWidget" xml:space="preserve">
+        <div t-out="props.record.data[props.name]" t-on-click.prevent.stop="openMatchLine"/>
+    </t>
+
+`);
+registerTemplate("purchase.DocumentFileUploader", `/purchase/static/src/components/purchase_file_uploader/purchase_file_uploader.xml`, `<t t-name="purchase.DocumentFileUploader" xml:space="preserve">
+        <FileUploader acceptedFileExtensions="props.acceptedFileExtensions" fileUploadClass="'document_file_uploader'" multiUpload="true" onClick.bind="onClick" onUploaded.bind="onFileUploaded" onUploadComplete.bind="onUploadComplete">
+            <t t-set-slot="toggler">
+                <button type="button" class="btn btn-secondary" data-hotkey="shift+i">
+                    Upload Bill
+                </button>
+            </t>
+            <t t-slot="default"/>
+        </FileUploader>
+    </t>
+ `);
+registerTemplateExtension("account.TaxTotalsField", `/purchase/static/src/components/tax_totals/tax_totals.xml`, `<t t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1" xml:space="preserve">
+        <xpath expr="//tr[2]" position="after">
+            <tr t-if="totals.amount_total_cc">
+                <td colspan="2">
+                    <span t-out="totals.amount_total_cc" style="font-size: 1.1em;"/>
+                </td>
+            </tr>
+        </xpath>
+    </t>
+`);
+registerTemplate("PurchaseProductCatalogKanbanRenderer", `/purchase/static/src/product_catalog/kanban_renderer.xml`, `<t t-name="PurchaseProductCatalogKanbanRenderer" t-inherit="web.KanbanRenderer" t-inherit-mode="primary" xml:space="preserve">
+        <t t-if="showNoContentHelper" position="replace">
+            <t t-if="showNoContentHelper">
+                <div class="o_view_nocontent" role="alert">
+                    <div class="o_nocontent_help">
+                        <p class="o_view_nocontent_smiling_face">
+                            No Products for the selected Vendor.
+                        </p>
+                        <p>
+                            Try removing the top filter to broaden your search
+                            <br/>
+                            <button class="mt-2 btn btn-primary" t-on-click="this.createProduct">Create a product</button>
+                        </p>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </t>
+`);
+registerTemplate("purchase.ButtonWithNotification", `/purchase/static/src/toaster_button/toaster_button_widget.xml`, `<t t-name="purchase.ButtonWithNotification" xml:space="preserve">
+        <button t-on-click="onClick" t-att-name="props.method" type="button" class="btn oe_inline btn-link" t-att-title="props.title">
+            <i class="fa fa-fw o_button_icon fa-info-circle"/>
+        </button>
+    </t>
+
+`);
+registerTemplate("purchase.PurchaseDashboard", `/purchase/static/src/views/purchase_dashboard.xml`, `<t t-name="purchase.PurchaseDashboard" xml:space="preserve">
+        <div class="o_purchase_dashboard container-fluid py-4 border-bottom bg-view">
+            <div class="row justify-content-between gap-2 gap-lg-0">
+                <div class="col-12 col-lg-8 flex-grow-1 flex-lg-grow-0 flex-shrink-0">
+                    <div class="grid gap-1 gap-lg-4">
+                        <div class="g-col-12 g-col-lg-1 d-flex align-items-center pt-2 pb-lg-2 justify-content-lg-end text-break">
+                            <t t-if="multiuser">All</t>
+                        </div>
+                        <div class="g-col-12 g-col-lg-11 grid gap-1" style="--columns: 61">
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="All Draft RFQs" filter_name="draft_rfqs">
+                                <a href="#" class="btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}                                        {{ purchaseData['global']['draft']['all'] == 0                                           ? 'bg-secondary-subtle text-secondary-emphasis'                                           : 'bg-info-subtle text-info-emphasis' }}">
+                                    <div class="fs-2">
+                                        <span t-out="purchaseData['global']['draft']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['global']['draft']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['global']['draft']['priority']"/>
+                                        </span>
+                                    </div>New
+                                </a>
+                            </div>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="All Sent RFQs" filter_name="waiting_rfqs">
+                                <a href="#" class="btn purchase-dashboard-card p-1 p-lg-2 bg-secondary-subtle text-secondary-emphasis text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}">
+                                    <div class="fs-2">
+                                        <span t-out="purchaseData['global']['sent']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['global']['sent']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['global']['sent']['priority']"/>
+                                        </span>
+                                    </div>RFQ Sent
+                                </a>
+                            </div>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="All Late RFQs" filter_name="late">
+                                <a href="#" class="btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}                                        {{ purchaseData['global']['late']['all'] == 0                                           ? 'bg-secondary-subtle text-secondary-emphasis'                                           : 'bg-warning-subtle text-warning-emphasis' }}">
+                                    <div class="fs-2">
+                                        <span t-out="purchaseData['global']['late']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['global']['late']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['global']['late']['priority']"/>
+                                        </span>
+                                    </div>Late RFQ
+                                </a>
+                            </div>
+                            <div class="g-col-1"/>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="All Not Acknowledged POs" filter_name="not_acknowledged">
+                                <a href="#" class="btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}                                        {{ purchaseData['global']['not_acknowledged']['all'] == 0                                           ? 'bg-secondary-subtle text-secondary-emphasis'                                           : 'bg-info-subtle text-info-emphasis' }}">
+                                    <div class="fs-2">
+                                        <span t-out="purchaseData['global']['not_acknowledged']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['global']['not_acknowledged']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['global']['not_acknowledged']['priority']"/>
+                                        </span>
+                                    </div>Not Acknowledged
+                                </a>
+                            </div>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="All Late Receipt POs" filter_name="late_receipt">
+                                <a href="#" class="btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}                                        {{ purchaseData['global']['late_receipt']['all'] == 0                                           ? 'bg-secondary-subtle text-secondary-emphasis'                                           : 'bg-danger-subtle text-danger-emphasis' }}">
+
+                                    <div class="fs-2">
+                                        <span t-out="purchaseData['global']['late_receipt']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['global']['late_receipt']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['global']['late_receipt']['priority']"/>
+                                        </span>
+                                    </div>Late Receipt
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div t-if="multiuser" class="grid gap-1 gap-lg-4">
+                        <div class="g-col-12 g-col-lg-1 d-flex align-items-center pt-2 pb-lg-2 justify-content-lg-end text-break">
+                            My
+                        </div>
+                        <div class="g-col-12 g-col-lg-11 grid gap-1 pt-0 pt-lg-1" style="--columns: 61">
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="My Draft RFQs" filter_name="draft_rfqs,my_purchases">
+                                <a href="#" class="o_purchase_dashboard_card_bottom btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="{{ purchaseData['my']['draft']['all'] == 0 ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-info-subtle text-info-emphasis' }}">
+                                    <div>
+                                        <span t-out="purchaseData['my']['draft']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['my']['draft']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['my']['draft']['priority']"/>
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="My Waiting RFQs" filter_name="waiting_rfqs,my_purchases">
+                                <a href="#" class="o_purchase_dashboard_card_bottom btn purchase-dashboard-card p-1 p-lg-2 bg-secondary-subtle text-secondary-emphasis text-truncate text-wrap">
+                                    <div>
+                                        <span t-out="purchaseData['my']['sent']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['my']['sent']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['my']['sent']['priority']"/>
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="My Late RFQs" filter_name="late,my_purchases">
+                                <a href="#" class="o_purchase_dashboard_card_bottom btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="{{ purchaseData['my']['late']['all'] == 0 ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-warning-subtle text-warning-emphasis' }}">
+                                    <div>
+                                        <span t-out="purchaseData['my']['late']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['my']['late']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['my']['late']['priority']"/>
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="g-col-1"/>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="My Not Acknowledged POs" filter_name="not_acknowledged,my_purchases">
+                                <a href="#" class="o_purchase_dashboard_card_bottom btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="{{ purchaseData['my']['not_acknowledged']['all'] == 0 ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-info-subtle text-info-emphasis' }}">
+                                    <div>
+                                        <span t-out="purchaseData['my']['not_acknowledged']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['my']['not_acknowledged']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['my']['not_acknowledged']['priority']"/>
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="g-col-12 p-0" t-on-click="setSearchContext" title="My Late Receipt POs" filter_name="late_receipt,my_purchases">
+                                <a href="#" class="o_purchase_dashboard_card_bottom btn purchase-dashboard-card p-1 p-lg-2 text-truncate text-wrap" t-attf-class="{{ purchaseData['my']['late_receipt']['all'] == 0 ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-danger-subtle text-danger-emphasis' }}">
+                                    <div>
+                                        <span t-out="purchaseData['my']['late_receipt']['all']"/>
+                                        <span class="ps-4" t-if="purchaseData['my']['late_receipt']['priority']">
+                                            <span class="o_priority_star fa fa-star "/> <span t-out="purchaseData['my']['late_receipt']['priority']"/>
+                                        </span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-3 flex-shrink-0">
+                    <div class="grid gap-1 gap-lg-4">
+                        <div class="d-lg-none g-col-12 d-flex align-items-center pt-2 pb-lg-2 justify-content-lg-end text-break">
+                            All
+                        </div>
+                        <div class="g-col-12 g-col-lg-12 grid gap-1">
+                            <div class="d-none d-lg-block g-col-6 p-0" id="left_grid_top"/>
+                            <div class="g-col-6 p-0" title="All Days to Order">
+                                <div class="purchase-dashboard-card o_no_hover p-1 p-lg-2 text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}                                          {{ purchaseData['days_to_purchase'] and                                             purchaseData['global']['days_to_order'] &gt; purchaseData['days_to_purchase']                                             ? 'btn btn-warning'                                             : 'bg-100 text-center' }}">
+                                    <div class="fs-2" t-out="purchaseData['global']['days_to_order']"/>Days to Order
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div t-if="multiuser" class="grid gap-1 gap-lg-4 pt-0 pt-lg-1">
+                        <div class="d-lg-none g-col-12 d-flex align-items-center pt-2 pb-lg-2 justify-content-lg-end text-break">
+                            My
+                        </div>
+                        <div class="g-col-12 g-col-lg-12 grid gap-1">
+                            <div class="d-none d-lg-block g-col-6 p-0" id="left_grid_bottom"/>
+                            <div class="g-col-6 p-0" title="My Days to Order">
+                                <div class="o_purchase_dashboard_card_bottom purchase-dashboard-card o_no_hover p-1 p-lg-2 text-truncate text-wrap" t-attf-class="{{                                         purchaseData['days_to_purchase'] and                                         purchaseData['global']['days_to_order'] &gt; purchaseData['days_to_purchase']                                         ? 'btn btn-warning' : 'bg-100 text-center' }}">
+                                    <div t-out="purchaseData['my']['days_to_order']"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+`);
+registerTemplate("purchase.PurchaseKanbanView", `/purchase/static/src/views/purchase_kanbanview.xml`, `<t t-name="purchase.PurchaseKanbanView" t-inherit="account.FileUploadKanbanRenderer" t-inherit-mode="primary" xml:space="preserve">
+        <xpath expr="//div[hasclass('o_kanban_renderer')]" position="before">
+            <PurchaseDashBoard/>
+        </xpath>
+    </t>
+`);
+registerTemplate("purchase.ListRenderer", `/purchase/static/src/views/purchase_listview.xml`, `<t t-name="purchase.ListRenderer" t-inherit="account.FileUploadListRenderer" t-inherit-mode="primary" xml:space="preserve">
+        <xpath expr="//div[hasclass('o_list_renderer')]" position="before">
+            <PurchaseDashBoard list="props.list"/>
+        </xpath>
+    </t>
+
+    `);
+registerTemplate("purchase.ListView", `/purchase/static/src/views/purchase_listview.xml`, `<t t-name="purchase.ListView" t-inherit="web.ListView" t-inherit-mode="primary" xml:space="preserve">
+        <xpath expr="//SelectionBox" position="after">
+            <PurchaseFileUploader list="model.root"/>
+        </xpath>
+    </t>
+`);
 registerTemplate("resource_mail.AvatarCardResourcePopover", `/resource_mail/static/src/components/avatar_card_resource/avatar_card_resource_popover.xml`, `<t t-name="resource_mail.AvatarCardResourcePopover" t-inherit="mail.AvatarCardPopover" xml:space="preserve">
         <xpath expr="//span[hasclass('o_avatar')]/img" position="attributes">
             <attribute name="t-attf-src" t-if="displayAvatar">/web/image/{{ props.recordModel }}/{{ props.id }}/avatar_128</attribute>
@@ -39338,6 +39704,115 @@ registerTemplate("stock_account.StockValuationReport.Accrual", `/stock_account/s
         <t t-if="accrual.lines.length">
             <StockValuationReportToggleLine label="_t('Accrual')" sublines="accrual.lines" level="0"/>
         </t>
+    </t>
+`);
+registerTemplate("purchase_stock.ProductCatalogSearchPanel", `/purchase_stock/static/src/product_catalog/search/search_panel.xml`, `<t t-name="purchase_stock.ProductCatalogSearchPanel" t-inherit="account.ProductCatalogSearchPanel" t-inherit-mode="primary" xml:space="preserve">
+        <xpath expr="//t[@t-call='account.ProductCatalogSearchPanelContent']" position="attributes">
+            <attribute name="t-call">purchase_stock.ProductCatalogSearchPanelContent</attribute>
+        </xpath>
+    </t>
+    `);
+registerTemplate("purchase_stock.ProductCatalogSearchPanelContent", `/purchase_stock/static/src/product_catalog/search/search_panel.xml`, `<t t-name="purchase_stock.ProductCatalogSearchPanelContent" t-inherit="account.ProductCatalogSearchPanelContent" t-inherit-mode="primary" xml:space="preserve">
+        <xpath expr="//section[hasclass('o_search_panel_sections')]" position="attributes">
+            <t t-if="suggest.suggestToggle.isOn">
+                <attribute name="class">o_search_panel_sections mt-4</attribute>
+            </t>
+        </xpath>
+        <xpath expr="//section[hasclass('o_search_panel_sections')]" position="before">
+            <t t-if="displaySuggest">
+                <t t-call="PurchaseSuggest.SearchPanel.Header"/>
+                <t t-if="suggest.suggestToggle.isOn">
+                    <div class="o_suggest_feature">
+                        <t t-call="PurchaseSuggest.SearchPanel.DaysInput"/>
+                        <t t-call="PurchaseSuggest.SearchPanel.BasedOn"/>
+                        <t t-call="PurchaseSuggest.SearchPanel.Footer"/>
+                    </div>
+                </t>
+            </t>
+        </xpath>
+    </t>
+
+    `);
+registerTemplate("PurchaseSuggest.SearchPanel.Header", `/purchase_stock/static/src/product_catalog/search/search_panel.xml`, `<t t-name="PurchaseSuggest.SearchPanel.Header" xml:space="preserve">
+        <div name="search_panel_suggestion" class="d-flex pt-4 mt-3">
+            <header class=" text-uppercase cursor-default" t-att-title="tooltipTitle">
+                <i class="fa fa-lg fa-lightbulb-o text-primary me-2"/>
+                <b class="me-2">Suggest</b>
+            </header>
+            <div class="d-flex align-items-center ms-auto">
+                <div name="search-suggest-toggle" class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" t-att-checked="suggest.suggestToggle.isOn? true : false" t-on-click="toggleSuggest"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    `);
+registerTemplate("PurchaseSuggest.SearchPanel.DaysInput", `/purchase_stock/static/src/product_catalog/search/search_panel.xml`, `<t t-name="PurchaseSuggest.SearchPanel.DaysInput" xml:space="preserve">
+        <div class="d-flex align-items-center ms-2 pt-2">
+            <span class="me-2 fw-bold">Replenish for</span>
+            <input type="text" inputmode="numeric" class="o_PurchaseSuggestInput" t-att-value="suggest.numberOfDays" t-on-input="onDaysInput" t-on-mousedown="selectAllOnClick"/>
+            <span class="ms-2">day(s)</span>
+        </div>
+    </t>
+
+    `);
+registerTemplate("PurchaseSuggest.SearchPanel.BasedOn", `/purchase_stock/static/src/product_catalog/search/search_panel.xml`, `<t t-name="PurchaseSuggest.SearchPanel.BasedOn" xml:space="preserve">
+        <div class="d-inline-flex align-items-center ms-2 mt-2 fw-bold">Based on</div>
+        <div class="d-inline-flex align-items-center ms-1 me-2">
+            <div class="o_TimePeriodSelectionField">
+                <TimePeriodSelectionField t-props="timePeriodProps"/>
+            </div>
+            <span class="m-1">x</span>
+            <input type="text" inputmode="numeric" class="o_PurchaseSuggestInput" t-att-value="suggest.percentFactor" t-on-input="onPercentFactorInput" t-on-mousedown="selectAllOnClick"/>
+            <span>%</span>
+        </div>
+    </t>
+
+    `);
+registerTemplate("PurchaseSuggest.SearchPanel.Footer", `/purchase_stock/static/src/product_catalog/search/search_panel.xml`, `<t t-name="PurchaseSuggest.SearchPanel.Footer" xml:space="preserve">
+        <div class="d-flex align-items-center mt-3 ms-2">
+            <div class="text-info fw-bold">
+                <span name="suggest_total"><t t-out="estimatedSuggestPrice"/></span>
+            </div>
+            <button name="suggest_add_all" class="btn btn-sm btn-primary ms-2" t-on-click="addAllProducts">
+                Add All
+            </button>
+        </div>
+    </t>
+`);
+registerTemplateExtension("purchase.PurchaseDashboard", `/purchase_stock/static/src/purchase_dashboard/purchase_dashboard.xml`, `<t t-name="purchase_stock.PurchaseDashboard" t-inherit="purchase.PurchaseDashboard" t-inherit-mode="extension" xml:space="preserve">
+        <xpath expr="//div[@id='left_grid_top']" position="replace">
+        <div class="g-col-6 p-0" title="OTD">
+            <div class="purchase-dashboard-card o_no_hover p-1 p-lg-2 bg-100 text-center text-truncate text-wrap" t-attf-class="o_purchase_dashboard_card_{{ multiuser ? 'top' : 'sole' }}">
+                <div class="fs-2" t-out="purchaseData['global']['otd']"/>OTD
+            </div>
+        </div>
+        </xpath>
+        <xpath expr="//div[@id='left_grid_bottom']" position="replace">
+        <div t-if="multiuser" class="g-col-6 p-0" title="OTD">
+            <div class="o_purchase_dashboard_card_bottom purchase-dashboard-card o_no_hover p-1 p-lg-2 bg-100 text-center text-truncate text-wrap">
+                <div t-out="purchaseData['my']['otd']"/>
+            </div>
+        </div>
+        </xpath>
+    </t>
+`);
+registerTemplateExtension("stock.ForecastedDetails", `/purchase_stock/static/src/purchase_stock_forecasted/forecasted_details.xml`, `<t t-name="purchase_stock.ForecastedDetails" t-inherit="stock.ForecastedDetails" t-inherit-mode="extension" xml:space="preserve">
+         <xpath expr="//tr[@name='draft_picking_in']" position="after">
+            <tr t-if="currentProduct.draft_purchase_qty.in" name="draft_po_in" t-attf-class="#{currentProduct.draft_purchase_orders_matched and 'table-info'} #{multipleProducts and 'collapse show' or ''} collapseGroup_#{line.product.id}">
+                <td/>
+                <td>Requests for quotation :
+                    <t t-foreach="currentProduct.draft_purchase_orders" t-as="purchase_order" t-key="purchase_order_index">
+                        <t t-if="purchase_order_index &gt; 0"> | </t>
+                        <a t-attf-href="#" t-out="purchase_order.name" class="fw-bold" t-on-click.prevent="() =&gt; this.props.openView('purchase.order', 'form', purchase_order.id)"/>
+                    </t>
+                </td>
+                <td class="text-end text-success">
+                    <t t-out="_formatFloat(currentProduct.draft_purchase_qty.in)"/> <t t-out="line.uom_id.display_name"/>
+                </td>
+            </tr>
+        </xpath>
     </t>
 `);
 registerTemplate("account_peppol.WhatIsPeppol", `/account_peppol/static/src/components/peppol_info/peppol_info.xml`, `<t t-name="account_peppol.WhatIsPeppol" xml:space="preserve">
